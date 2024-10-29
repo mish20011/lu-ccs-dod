@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "996012233955",
+    "project_id": "dod-app-8a76e",
+    "storage_bucket": "dod-app-8a76e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:996012233955:android:3dfc113ab96623b9a321d6",
+        "android_client_info": {
+          "package_name": "com.catignascabela.dodapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCygIJG5fHenQDgjSht9KVI55_wXbj9G4M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
