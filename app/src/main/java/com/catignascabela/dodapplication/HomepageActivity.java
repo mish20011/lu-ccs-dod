@@ -3,6 +3,7 @@ package com.catignascabela.dodapplication;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
@@ -14,10 +15,13 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.catignascabela.dodapplication.databinding.ActivityHomepageBinding;
 
 public class HomepageActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private ActivityHomepageBinding binding;
+    private FirebaseAuth firebaseAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,23 +41,36 @@ public class HomepageActivity extends AppCompatActivity implements NavigationVie
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
+        // Initialize Firebase Auth
+        firebaseAuth = FirebaseAuth.getInstance();
+
+        // Check if the user is logged in and load the appropriate fragment
         if (savedInstanceState == null) {
-            // Check if the user is a teacher or a student
+            FirebaseUser currentUser = firebaseAuth.getCurrentUser();
             boolean isTeacher = getIntent().getBooleanExtra("isTeacher", false);
 
             // Load the appropriate fragment based on user type
-            Fragment initialFragment;
-            if (isTeacher) {
-                initialFragment = new TeacherHomeFragment(); // Use your teacher fragment here
+            if (currentUser != null) {
+                loadInitialFragment(isTeacher);
             } else {
-                initialFragment = new StudentHomeFragment();
+                // If not logged in, navigate to LoginActivity
+                startLoginActivity();
             }
-
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, initialFragment)
-                    .commit();
-            navigationView.setCheckedItem(R.id.nav_home);
         }
+    }
+
+    private void loadInitialFragment(boolean isTeacher) {
+        Fragment initialFragment;
+        if (isTeacher) {
+            initialFragment = new TeacherHomeFragment();
+        } else {
+            initialFragment = new StudentHomeFragment();
+        }
+
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, initialFragment)
+                .commit();
+        binding.navigationView.setCheckedItem(R.id.nav_home); // Highlight the home item
     }
 
     @Override
@@ -62,14 +79,15 @@ public class HomepageActivity extends AppCompatActivity implements NavigationVie
         Fragment selectedFragment = null;
 
         if (id == R.id.nav_home) {
-            // Check if the user is a teacher or a student
+            // Check if the user is logged in
+            FirebaseUser currentUser = firebaseAuth.getCurrentUser();
             boolean isTeacher = getIntent().getBooleanExtra("isTeacher", false);
 
             // Load the appropriate fragment based on user type
-            if (isTeacher) {
-                selectedFragment = new TeacherHomeFragment(); // Use your teacher fragment here
+            if (currentUser != null) {
+                loadInitialFragment(isTeacher);
             } else {
-                selectedFragment = new StudentHomeFragment();
+                startLoginActivity();
             }
         } else if (id == R.id.nav_violations) {
             selectedFragment = new ViolationsFragment();
@@ -90,6 +108,9 @@ public class HomepageActivity extends AppCompatActivity implements NavigationVie
     }
 
     private void logout() {
+        // Log out from Firebase
+        firebaseAuth.signOut();
+
         // Clear shared preferences to log out the user
         SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -97,6 +118,10 @@ public class HomepageActivity extends AppCompatActivity implements NavigationVie
         editor.apply();
 
         // Navigate back to the login activity
+        startLoginActivity();
+    }
+
+    private void startLoginActivity() {
         Intent intent = new Intent(HomepageActivity.this, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);

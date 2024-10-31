@@ -19,4 +19,12 @@
         android:layout_height="wrap_content"
         android:text="View Student Profiles"
         android:layout_marginTop="16dp"/>
+
+    <!-- Add the manage violations button here -->
+    <Button
+        android:id="@+id/manageViolationsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Manage Violations"
+        android:layout_marginTop="16dp"/>
 </LinearLayout>

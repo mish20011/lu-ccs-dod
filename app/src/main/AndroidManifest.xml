@@ -34,10 +34,22 @@
             android:name=".TeacherRegistrationActivity"
             android:exported="false" />
 
-        <!-- HomepageActivity (New Activity) -->
+        <!-- HomepageActivity -->
         <activity
             android:name=".HomepageActivity"
             android:exported="false" />
+
+        <!-- Additional Activities -->
+        <!-- If you have activities for the following fragments, declare them here -->
+<!--        <activity-->
+<!--            android:name=".ViolationsActivity"-->
+<!--            android:exported="false" />-->
+
+        <activity
+            android:name=".ScheduleActivity"
+            android:exported="false" />
+
+        <!-- Add any additional activities you have for your fragments -->
 
     </application>
 

@@ -1,7 +1,5 @@
 package com.catignascabela.dodapplication;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -13,48 +11,72 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.catignascabela.dodapplication.databinding.FragmentHomeStudentBinding;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class StudentHomeFragment extends Fragment {
 
     private FragmentHomeStudentBinding binding;
-    private SharedPreferences sharedPreferences;
+    private DatabaseReference databaseReference;
+    private FirebaseAuth mAuth;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentHomeStudentBinding.inflate(inflater, container, false);
 
-        // Get the shared preferences
-        sharedPreferences = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        // Initialize Firebase Authentication and Database Reference
+        mAuth = FirebaseAuth.getInstance();
+        databaseReference = FirebaseDatabase.getInstance().getReference("students");  // Updated path to "students"
 
-        // Retrieve student details from SharedPreferences
-        String studentId = sharedPreferences.getString("userId", "No ID");
-        String gender = sharedPreferences.getString("gender", "No Gender");
-        String yearBlock = sharedPreferences.getString("yearBlock", "No Year/Block");
-        String course = sharedPreferences.getString("course", "No Course");
-
-        // Retrieve surname, first name, and middle initial directly
-        String surname = sharedPreferences.getString("surname", "No Surname");
-        String firstName = sharedPreferences.getString("firstName", "No First Name");
-        String middleInitial = sharedPreferences.getString("middleInitial", "").trim();
-
-        // Debugging logs to verify correct data retrieval
-        Log.d("StudentHomeFragment", "Retrieved Surname: " + surname);
-        Log.d("StudentHomeFragment", "Retrieved First Name: " + firstName);
-        Log.d("StudentHomeFragment", "Retrieved Middle Initial: " + middleInitial);
-
-        // Construct the full name
-        String fullName = sharedPreferences.getString("fullName", "No Full Name");
-
-        // Debugging log for full name
-        Log.d("StudentHomeFragment", "Retrieved Full Name: " + fullName);
-
-        // Set the student details in the TextViews
-        binding.studentIdTextView.setText("ID: " + studentId);
-        binding.genderTextView.setText("Gender: " + gender);
-        binding.collegeYearTextView.setText("Year/Block: " + yearBlock);
-        binding.courseTextView.setText("Course: " + course);
-        binding.fullNameTextView.setText("Full Name: " + fullName);
+        // Fetch user data from Firebase
+        fetchStudentData();
 
         return binding.getRoot();
+    }
+
+    private void fetchStudentData() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+        if (currentUser != null) {
+            String userId = currentUser.getUid(); // Get the current user's ID
+
+            // Reference to the user's data in the "students" node in the database
+            databaseReference.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        Student student = snapshot.getValue(Student.class);
+
+                        if (student != null) {
+                            // Set the student details in the TextViews
+                            binding.studentIdTextView.setText("ID: " + student.getStudentId());
+                            binding.genderTextView.setText("Gender: " + student.getGender());
+                            binding.collegeYearTextView.setText("Year/Block: " + student.getYearBlock());
+                            binding.courseTextView.setText("Course: " + student.getCourse());
+                            binding.fullNameTextView.setText("Full Name: " + student.getFullName());
+
+                            // Debugging log to verify student data retrieval
+                            Log.d("StudentHomeFragment", "Student Data Retrieved: " + student.toString());
+                        } else {
+                            Log.d("StudentHomeFragment", "Student data is null.");
+                        }
+                    } else {
+                        Log.d("StudentHomeFragment", "No data found for user ID: " + userId);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("StudentHomeFragment", "Database error: " + error.getMessage());
+                }
+            });
+        } else {
+            Log.d("StudentHomeFragment", "No current user found.");
+        }
     }
 }

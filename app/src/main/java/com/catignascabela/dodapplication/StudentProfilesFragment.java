@@ -1,100 +1,72 @@
 package com.catignascabela.dodapplication;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Toast;
 import androidx.recyclerview.widget.LinearLayoutManager;
-
-import com.catignascabela.dodapplication.databinding.FragmentStudentProfilesBinding;
-
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StudentProfilesFragment extends Fragment {
+public class StudentProfilesFragment extends Fragment implements StudentAdapter.OnStudentClickListener {
 
-    private FragmentStudentProfilesBinding binding;
-    private List<Student> studentList; // List to hold students
-    private StudentAdapter studentAdapter; // Adapter for RecyclerView
-    private SharedPreferences sharedPreferences;
+    private RecyclerView recyclerView;
+    private StudentAdapter studentAdapter;
+    private List<Student> studentList;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        binding = FragmentStudentProfilesBinding.inflate(inflater, container, false);
-        View view = binding.getRoot();
+        View view = inflater.inflate(R.layout.fragment_student_profiles, container, false);
+        recyclerView = view.findViewById(R.id.student_recycler_view); // Ensure the ID matches your layout
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Initialize SharedPreferences
-        sharedPreferences = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        studentList = new ArrayList<>();
+        studentAdapter = new StudentAdapter(studentList, this); // Pass the click listener
+        recyclerView.setAdapter(studentAdapter);
 
-        // Retrieve all student information
-        studentList = retrieveStudentProfiles();
-
-        // Set up RecyclerView
-        studentAdapter = new StudentAdapter(studentList, this::onStudentClick);
-        binding.studentRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.studentRecyclerView.setAdapter(studentAdapter);
-
+        loadStudents();
         return view;
     }
 
-    private List<Student> retrieveStudentProfiles() {
-        List<Student> students = new ArrayList<>();
-
-        // Assuming you have a naming convention for the student IDs
-        int studentCount = sharedPreferences.getInt("studentCount", 0); // Total number of registered students
-
-        for (int i = 0; i < studentCount; i++) {
-            String studentId = sharedPreferences.getString("userId_" + i, null);
-            String surname = sharedPreferences.getString("surname_" + i, null);
-            String firstName = sharedPreferences.getString("firstName_" + i, null);
-            String middleInitial = sharedPreferences.getString("middleInitial_" + i, null);
-            String gender = sharedPreferences.getString("gender_" + i, null);
-            String yearBlock = sharedPreferences.getString("yearBlock_" + i, null);
-            String course = sharedPreferences.getString("course_" + i, null);
-
-            // Construct full name
-            String fullName = firstName + (middleInitial != null && !middleInitial.isEmpty() ? " " + middleInitial + "." : "") + " " + surname;
-
-            // Add student only if ID is not null
-            if (studentId != null) {
-                Student student = new Student(fullName, studentId);
-                student.setGender(gender);
-                student.setYearBlock(yearBlock);
-                student.setCourse(course);
-                students.add(student);
+    private void loadStudents() {
+        DatabaseReference studentsRef = FirebaseDatabase.getInstance().getReference("students");
+        studentsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                studentList.clear();
+                for (DataSnapshot studentSnapshot : snapshot.getChildren()) {
+                    Student student = studentSnapshot.getValue(Student.class);
+                    if (student != null) {
+                        studentList.add(student);
+                    }
+                }
+                studentAdapter.notifyDataSetChanged();
             }
-        }
 
-        return students;
-    }
-
-    private void onStudentClick(Student student) {
-        // Show a dialog to input violation details
-        showViolationDialog(student);
-    }
-
-    private void showViolationDialog(Student student) {
-        ViolationDialog dialog = new ViolationDialog(student, this::updateStudentViolations);
-        dialog.show(getParentFragmentManager(), "ViolationDialog");
-    }
-
-    private void updateStudentViolations(Student student, String violation, String punishment) {
-        // Update the student with the new violation and punishment
-        student.addViolation(violation, punishment);
-        studentAdapter.notifyDataSetChanged(); // Refresh the RecyclerView
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(getContext(), "Failed to load students.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null; // Prevent memory leaks
+    public void onStudentClick(Student student) {
+        // Handle click event, e.g., show student details
+        Toast.makeText(getContext(), "Clicked: " + student.getFullName(), Toast.LENGTH_SHORT).show();
+        // You can navigate to another fragment or activity to show more details about the student
+        // Example: navigate to a StudentDetailFragment
     }
 }

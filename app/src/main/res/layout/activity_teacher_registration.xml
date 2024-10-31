@@ -87,6 +87,21 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/register_password" />
 
+            <!-- New EditText for email -->
+            <EditText
+                android:id="@+id/register_email"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/custom_edittext"
+                android:hint="Email"
+                android:inputType="textEmailAddress"
+                android:padding="10dp"
+                android:textColor="@color/black"
+                android:textColorHint="@color/grey"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/register_full_name" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -94,7 +109,7 @@
                 android:text="Department"
                 android:textColor="@color/green"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/register_full_name" />
+                app:layout_constraintTop_toBottomOf="@id/register_email" />
 
             <RadioGroup
                 android:id="@+id/radio_group_department"
@@ -103,7 +118,7 @@
                 android:layout_marginTop="20dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/register_full_name">
+                app:layout_constraintTop_toBottomOf="@id/register_email">
 
                 <RadioButton
                     android:id="@+id/radio_cs"

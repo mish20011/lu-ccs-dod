@@ -27,14 +27,14 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
     @NonNull
     @Override
     public StudentViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_2, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_student, parent, false); // Use a custom layout
         return new StudentViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull StudentViewHolder holder, int position) {
         Student student = studentList.get(position);
-        holder.name.setText(student.getFullName()); // Changed from getName() to getFullName()
+        holder.name.setText(student.getFullName());
         holder.studentId.setText(student.getStudentId());
 
         holder.itemView.setOnClickListener(v -> listener.onStudentClick(student));
@@ -42,7 +42,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
 
     @Override
     public int getItemCount() {
-        return studentList.size();
+        return studentList != null ? studentList.size() : 0; // Handle null or empty list
     }
 
     static class StudentViewHolder extends RecyclerView.ViewHolder {
@@ -51,8 +51,8 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
 
         public StudentViewHolder(@NonNull View itemView) {
             super(itemView);
-            name = itemView.findViewById(android.R.id.text1);
-            studentId = itemView.findViewById(android.R.id.text2);
+            name = itemView.findViewById(R.id.student_name); // Make sure this ID matches your layout
+            studentId = itemView.findViewById(R.id.student_id); // Make sure this ID matches your layout
         }
     }
 }

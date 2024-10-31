@@ -7,7 +7,6 @@
     android:padding="16dp"
     android:background="@color/white">
 
-    <!-- Student Image (Centered and Enlarged) -->
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/student_image_view"
         android:layout_width="150dp"
@@ -20,7 +19,6 @@
         app:civ_border_width="2dp"
         app:civ_border_color="@color/white" />
 
-    <!-- CardView for Student Details (Center aligned, under the image) -->
     <androidx.cardview.widget.CardView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -33,7 +31,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Inner Layout for TextViews (Student Details) -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -45,17 +42,16 @@
                 android:id="@+id/student_id_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ID: 201-1234"
+                android:text="ID:"
                 android:textColor="@color/black"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <!-- Full Name TextView -->
             <TextView
                 android:id="@+id/full_name_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Full Name: John Doe"
+                android:text="Full Name:"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 
@@ -63,7 +59,7 @@
                 android:id="@+id/gender_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Gender: Male"
+                android:text="Gender:"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 
@@ -71,7 +67,7 @@
                 android:id="@+id/college_year_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Year: 3rd Year"
+                android:text="Year:"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 
@@ -79,7 +75,7 @@
                 android:id="@+id/block_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Block: B"
+                android:text="Block:"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 
@@ -87,7 +83,7 @@
                 android:id="@+id/course_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Course: Computer Science"
+                android:text="Course:"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
         </LinearLayout>
