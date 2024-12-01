@@ -3,10 +3,11 @@ package com.catignascabela.dodapplication;
 public class Teacher {
     private String fullName;
     private String department;
-    private String uid;
-    private String email; // New attribute
-    private String username; // New attribute for username
-    private String role; // New attribute for role
+    private String uid; // Unique identifier for the teacher
+    private String email;
+    private String username;
+    private String role;
+    private boolean isApproved; // Indicates if the teacher is approved
 
     // Default constructor required for calls to DataSnapshot.getValue(Teacher.class)
     public Teacher() {
@@ -16,10 +17,11 @@ public class Teacher {
     public Teacher(String fullName, String department, String uid, String email, String username) {
         this.fullName = fullName;
         this.department = department;
-        this.uid = uid;
+        this.uid = uid; // Ensure this is set correctly
         this.email = email;
         this.username = username;
-        this.role = "teacher"; // Set role as "teacher"
+        this.role = "teacher"; // Default role
+        this.isApproved = false; // Default is not approved
     }
 
     // Getters and setters
@@ -44,7 +46,7 @@ public class Teacher {
     }
 
     public void setUid(String uid) {
-        this.uid = uid;
+        this.uid = uid; // Ensure you are setting this when creating/updating a teacher
     }
 
     public String getEmail() {
@@ -69,5 +71,13 @@ public class Teacher {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public boolean isApproved() {
+        return isApproved;
+    }
+
+    public void setApproved(boolean approved) {
+        isApproved = approved; // Setter for approval status
     }
 }

@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application")
-    id("com.google.gms.google-services")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.catignascabela.dodapplication"
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -41,7 +41,7 @@ android {
 dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("com.github.TutorialsAndroid:GButton:v1.0.19")
-    implementation(libs.play.services.auth)
+    implementation(libs.play.services.base)
     implementation(libs.appcompat) // Ensure no duplicate entries
     implementation(libs.fragment)
     implementation(libs.circleimageview)
@@ -50,13 +50,13 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.cardview)
-
-    // Use Firebase BOM to manage versions automatically
-    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-
-    // Firebase dependencies (versions managed by BOM)
-    implementation(libs.google.firebase.auth)
-    implementation(libs.google.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.firebase:firebase-installations:18.0.0")
+    implementation(libs.firebase.database)
+    implementation ("androidx.navigation:navigation-fragment:2.8.4")
+    implementation ("androidx.navigation:navigation-ui:2.8.4")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
@@ -68,4 +68,3 @@ java {
         languageVersion = JavaLanguageVersion.of(17) // Align toolchain with Java version
     }
 }
-apply(plugin = "com.google.gms.google-services")

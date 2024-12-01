@@ -24,27 +24,7 @@
             android:layout_height="wrap_content"
             android:padding="24dp">
 
-            <!-- ImageView for profile photo -->
-            <ImageView
-                android:id="@+id/profile_image"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/rounded_corners"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <Button
-                android:id="@+id/upload_photo_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:text="Upload Photo"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/profile_image" />
-
+            <!-- Username EditText -->
             <EditText
                 android:id="@+id/register_username"
                 android:layout_width="0dp"
@@ -57,8 +37,9 @@
                 android:textColorHint="@color/grey"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/upload_photo_button" />
+                app:layout_constraintTop_toTopOf="parent" />
 
+            <!-- Password EditText -->
             <EditText
                 android:id="@+id/register_password"
                 android:layout_width="0dp"
@@ -73,6 +54,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/register_username" />
 
+            <!-- Full Name EditText -->
             <EditText
                 android:id="@+id/register_full_name"
                 android:layout_width="0dp"
@@ -87,30 +69,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/register_password" />
 
-            <!-- New EditText for email -->
-            <EditText
-                android:id="@+id/register_email"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:background="@drawable/custom_edittext"
-                android:hint="Email"
-                android:inputType="textEmailAddress"
-                android:padding="10dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/grey"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/register_full_name" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Department"
-                android:textColor="@color/green"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/register_email" />
-
+            <!-- RadioGroup for Department -->
             <RadioGroup
                 android:id="@+id/radio_group_department"
                 android:layout_width="0dp"
@@ -118,7 +77,13 @@
                 android:layout_marginTop="20dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/register_email">
+                app:layout_constraintTop_toBottomOf="@id/register_full_name">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Department"
+                    android:textColor="@color/green" />
 
                 <RadioButton
                     android:id="@+id/radio_cs"
@@ -133,19 +98,35 @@
                     android:text="IT" />
             </RadioGroup>
 
+            <!-- Register Button -->
             <Button
                 android:id="@+id/register_button"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:backgroundTint="@color/green"
                 android:gravity="center"
                 android:text="Register"
                 android:textColor="@color/white"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/registered_text"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/radio_group_department" />
+
+            <!-- TextView for "Already registered? Login" link -->
+            <TextView
+                android:id="@+id/registered_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Already registered? Login"
+                android:textColor="@color/green"
+                android:textSize="14sp"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/register_button" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>

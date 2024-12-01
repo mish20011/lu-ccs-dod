@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="department_options">
+        <item>All</item>
+        <item>CS</item>
+        <item>IT</item>
+    </string-array>
+</resources>

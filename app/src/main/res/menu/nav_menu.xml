@@ -7,9 +7,7 @@
         <item
             android:id="@+id/nav_violations"
             android:title="Violations" />
-        <item
-            android:id="@+id/nav_schedule"
-            android:title="Schedule" />
+
     </group>
     <item
         android:id="@+id/nav_logout"

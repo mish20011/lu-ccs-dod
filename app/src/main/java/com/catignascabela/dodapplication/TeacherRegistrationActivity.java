@@ -2,85 +2,121 @@ package com.catignascabela.dodapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.catignascabela.dodapplication.databinding.ActivityTeacherRegistrationBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.HashMap;
+
 public class TeacherRegistrationActivity extends AppCompatActivity {
 
-    private ActivityTeacherRegistrationBinding binding;
-    private FirebaseAuth mAuth;
-    private DatabaseReference databaseReference;
+    private EditText username, password, fullName;
+    private RadioGroup departmentRadioGroup;
+    private Button registerButton;
+    private TextView loginLink;
+    private FirebaseAuth auth;
+    private FirebaseDatabase database;
+    private DatabaseReference pendingTeachersRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityTeacherRegistrationBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        setContentView(R.layout.activity_teacher_registration);
 
-        // Initialize Firebase Authentication
-        mAuth = FirebaseAuth.getInstance();
-        // Initialize Database Reference to "teachers"
-        databaseReference = FirebaseDatabase.getInstance().getReference("teachers");
+        // Initialize Firebase Auth and Realtime Database
+        auth = FirebaseAuth.getInstance();
+        database = FirebaseDatabase.getInstance();
+        pendingTeachersRef = database.getReference("pending_teachers");  // Reference to pending_teachers node
 
-        // Set the onClick listener for the register button
-        binding.registerButton.setOnClickListener(v -> registerTeacher());
+        // Initialize UI components
+        username = findViewById(R.id.register_username);
+        password = findViewById(R.id.register_password);
+        fullName = findViewById(R.id.register_full_name);
+        departmentRadioGroup = findViewById(R.id.radio_group_department); // RadioGroup for department
+        registerButton = findViewById(R.id.register_button);
+        loginLink = findViewById(R.id.registered_text); // Corrected ID for login link
+
+        // Set click listener for register button
+        registerButton.setOnClickListener(v -> registerTeacher());
+
+        // Set click listener for login link
+        loginLink.setOnClickListener(v -> {
+            Intent intent = new Intent(TeacherRegistrationActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        });
     }
 
     private void registerTeacher() {
-        String email = binding.registerEmail.getText().toString().trim();
-        String password = binding.registerPassword.getText().toString().trim();
-        String fullName = binding.registerFullName.getText().toString().trim();
-        String username = binding.registerUsername.getText().toString().trim(); // Username field
+        String usernameValue = username.getText().toString().trim();
+        String passwordValue = password.getText().toString().trim();
+        String fullNameValue = fullName.getText().toString().trim();
 
         // Get selected department
-        int selectedDepartmentId = binding.radioGroupDepartment.getCheckedRadioButtonId();
-        RadioButton selectedDepartmentButton = findViewById(selectedDepartmentId);
-        String department = selectedDepartmentButton != null ? selectedDepartmentButton.getText().toString() : "";
+        int selectedDepartmentId = departmentRadioGroup.getCheckedRadioButtonId();
+        RadioButton selectedDepartment = findViewById(selectedDepartmentId);
+        String departmentValue = selectedDepartment != null ? selectedDepartment.getText().toString() : "";
 
-        // Input validation
-        if (email.isEmpty() || password.isEmpty() || fullName.isEmpty() || department.isEmpty() || username.isEmpty()) {
-            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
-            return; // Exit if any field is empty
+        // Validate input fields
+        if (TextUtils.isEmpty(usernameValue) || TextUtils.isEmpty(passwordValue) ||
+                TextUtils.isEmpty(fullNameValue) || TextUtils.isEmpty(departmentValue)) {
+
+            Toast.makeText(this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        // Firebase Authentication to create user
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        // Registration successful
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        // Create a Teacher object with the role
-                        Teacher newTeacher = new Teacher(fullName, department, user.getUid(), email, username);
-                        newTeacher.setRole("teacher"); // Set role
+        // Generate email for the teacher (autogenerated)
+        String teacherEmail = usernameValue + "@luteacher.com";
 
-                        // Save user data to Firebase Realtime Database
+        // Register teacher in Firebase Authentication
+        auth.createUserWithEmailAndPassword(teacherEmail, passwordValue)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = auth.getCurrentUser();
                         if (user != null) {
-                            databaseReference.child(user.getUid()).setValue(newTeacher)
-                                    .addOnCompleteListener(saveTask -> {
-                                        if (saveTask.isSuccessful()) {
-                                            Toast.makeText(this, "Registration Successful!", Toast.LENGTH_SHORT).show();
-                                            startActivity(new Intent(this, LoginActivity.class));
-                                            finish(); // Finish this activity to remove it from the back stack
-                                        } else {
-                                            Toast.makeText(this, "Failed to save user data.", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
+                            saveTeacherData(user.getUid(), usernameValue, fullNameValue, teacherEmail, departmentValue);
                         }
                     } else {
-                        // If registration fails, display a message
-                        Toast.makeText(this, "Registration failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(TeacherRegistrationActivity.this,
+                                "Registration failed: " + task.getException().getMessage(),
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
     }
+
+    private void saveTeacherData(String uid, String username, String fullName, String email, String department) {
+        // Create a HashMap to store teacher data
+        HashMap<String, Object> teacherData = new HashMap<>();
+        teacherData.put("uid", uid); // Add this line
+        teacherData.put("username", username);
+        teacherData.put("fullName", fullName);
+        teacherData.put("email", email);
+        teacherData.put("department", department);
+        teacherData.put("isApproved", false);
+
+        // Save teacher data to the Realtime Database under pending_teachers
+        pendingTeachersRef.child(uid).setValue(teacherData)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(TeacherRegistrationActivity.this, "Registration successful! Awaiting approval.", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(TeacherRegistrationActivity.this, LoginActivity.class));
+                    finish();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(TeacherRegistrationActivity.this,
+                                "Error saving data: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show());
+    }
+
 }

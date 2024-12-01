@@ -4,27 +4,29 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.catignascabela.dodapplication.databinding.ActivityLoginBinding;
-import com.catignascabela.dodapplication.databinding.DialogRegistrationChoiceBinding;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 public class LoginActivity extends AppCompatActivity {
-
     private ActivityLoginBinding binding;
     private FirebaseAuth mAuth;
+    private DatabaseReference studentDatabaseRef;
+    private DatabaseReference teacherDatabaseRef;
+    private DatabaseReference adminDatabaseRef; // Reference for admins
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,19 +34,18 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
+        studentDatabaseRef = FirebaseDatabase.getInstance().getReference("students");
+        teacherDatabaseRef = FirebaseDatabase.getInstance().getReference("teachers");
+        adminDatabaseRef = FirebaseDatabase.getInstance().getReference("admin"); // Reference for admins
 
-        // Set up TextWatchers to handle text input
         setupTextWatchers();
-
-        binding.button.setOnClickListener(v -> handleLogin());
-        binding.signupButton.setOnClickListener(v -> showRegistrationDialog());
+        setupClickListeners();
     }
 
     private void setupTextWatchers() {
-        binding.userid.addTextChangedListener(createTextWatcher(binding.useridUnderline));
-        binding.password.addTextChangedListener(createTextWatcher(binding.passwordUnderline));
+        binding.userid.addTextChangedListener(createTextWatcher(binding.textInputLayoutUserid));
+        binding.password.addTextChangedListener(createTextWatcher(binding.textInputLayoutPassword));
     }
 
     private TextWatcher createTextWatcher(View underlineView) {
@@ -54,7 +55,9 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                underlineView.setVisibility(View.GONE);
+                if (underlineView instanceof com.google.android.material.textfield.TextInputLayout) {
+                    ((com.google.android.material.textfield.TextInputLayout) underlineView).setError(null);
+                }
             }
 
             @Override
@@ -62,166 +65,163 @@ public class LoginActivity extends AppCompatActivity {
         };
     }
 
+    private void setupClickListeners() {
+        binding.button.setOnClickListener(v -> handleLogin());
+        binding.signupButton.setOnClickListener(v -> showRegistrationChoiceDialog());
+        binding.cantRecover.setOnClickListener(v -> showSnackbar("Password recovery is currently disabled."));
+    }
+
     private void handleLogin() {
-        String idOrUsername = binding.userid.getText().toString().trim();
+        String userId = binding.userid.getText().toString().trim();
         String password = binding.password.getText().toString().trim();
 
-        // Reset underline visibility
-        binding.useridUnderline.setVisibility(View.GONE);
-        binding.passwordUnderline.setVisibility(View.GONE);
-
-        if (idOrUsername.isEmpty() || password.isEmpty()) {
-            binding.useridUnderline.setVisibility(idOrUsername.isEmpty() ? View.VISIBLE : View.GONE);
-            binding.passwordUnderline.setVisibility(password.isEmpty() ? View.VISIBLE : View.GONE);
-            Toast.makeText(LoginActivity.this, "Empty Login", Toast.LENGTH_SHORT).show();
-        } else {
-            loginUser(idOrUsername, password);
+        if (userId.isEmpty() || password.isEmpty()) {
+            if (userId.isEmpty()) {
+                binding.textInputLayoutUserid.setError("Required");
+                binding.userid.requestFocus();
+            } else {
+                binding.textInputLayoutPassword.setError("Required");
+                binding.password.requestFocus();
+            }
+            return;
         }
+
+        Log.d("LoginActivity", "Querying database for userId: " + userId);
+
+        // Try to authenticate as an admin first
+        authenticateAdmin(userId, password);
     }
 
-    private void loginUser(String idOrUsername, String password) {
-        if (idOrUsername.contains("@")) {
-            // If input is an email, proceed with Firebase Auth directly
-            authenticateWithEmail(idOrUsername, password);
-        } else {
-            // Assume input is a student ID or teacher username and look up the associated email
-            lookupEmailFromIdOrUsername(idOrUsername, password);
-        }
-    }
-
-    private void lookupEmailFromIdOrUsername(String idOrUsername, String password) {
-        DatabaseReference studentsRef = FirebaseDatabase.getInstance().getReference("students");
-        studentsRef.orderByChild("studentId").equalTo(idOrUsername)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            for (DataSnapshot studentSnapshot : snapshot.getChildren()) {
-                                String email = studentSnapshot.child("email").getValue(String.class);
-                                if (email != null) {
-                                    authenticateWithEmail(email, password);
-                                    return; // Exit after finding the first matching student
-                                }
-                            }
+    private void authenticateAdmin(String userId, String password) {
+        adminDatabaseRef.orderByChild("id").equalTo(userId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        // Found the admin, check the password
+                        DataSnapshot adminSnapshot = snapshot.getChildren().iterator().next();
+                        String storedPassword = adminSnapshot.child("password").getValue(String.class);
+                        if (storedPassword != null && storedPassword.equals(password)) {
+                            // Admin login successful, navigate to AdminFragment
+                            navigateToAdminFragment();
+                        } else {
+                            showSnackbar("Invalid admin credentials.");
                         }
-                        // If not found in students, check teachers by username
-                        lookupEmailFromTeacherUsername(idOrUsername, password);
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(LoginActivity.this, "Database error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    private void lookupEmailFromTeacherUsername(String username, String password) {
-        DatabaseReference teachersRef = FirebaseDatabase.getInstance().getReference("teachers");
-        teachersRef.orderByChild("username").equalTo(username)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            for (DataSnapshot teacherSnapshot : snapshot.getChildren()) {
-                                String email = teacherSnapshot.child("email").getValue(String.class);
-                                if (email != null) {
-                                    authenticateWithEmail(email, password);
-                                    return; // Exit after finding the first matching teacher
-                                }
-                            }
-                        }
-                        // If no matching email found, show invalid ID message
-                        Toast.makeText(LoginActivity.this, "Invalid ID or username", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(LoginActivity.this, "Database error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    private void authenticateWithEmail(String email, String password) {
-        mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        checkUserRoleAndNavigate(user);
                     } else {
-                        Toast.makeText(LoginActivity.this, "Authentication failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        // If no admin found, check for student or teacher
+                        authenticateUser(userId, password);
                     }
-                });
+                })
+                .addOnFailureListener(e -> showSnackbar("Error querying admin credentials: " + e.getMessage()));
     }
 
-    private void checkUserRoleAndNavigate(FirebaseUser user) {
-        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference();
-
-        // Check in the teachers reference first
-        userRef.child("teachers").child(user.getUid()).child("role").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists() && "teacher".equals(snapshot.getValue(String.class))) {
-                    // Navigate to HomepageActivity with isTeacher flag
-                    navigateToHomepage(true);
-                } else {
-                    // Otherwise, check in the students reference
-                    userRef.child("students").child(user.getUid()).child("role").addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            if (snapshot.exists() && "student".equals(snapshot.getValue(String.class))) {
-                                // Navigate to HomepageActivity with isTeacher flag
-                                navigateToHomepage(false);
-                            } else {
-                                Toast.makeText(LoginActivity.this, "User role not found", Toast.LENGTH_SHORT).show();
-                            }
+    private void authenticateUser(String userId, String password) {
+        studentDatabaseRef.orderByChild("studentId").equalTo(userId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        // Found the student, get their email
+                        DataSnapshot studentSnapshot = snapshot.getChildren().iterator().next();
+                        String email = studentSnapshot.child("email").getValue(String.class);
+                        if (email != null) {
+                            signInWithEmail(email, password, false); // false indicates student
+                        } else {
+                            showSnackbar("No email linked to this student ID.");
                         }
+                    } else {
+                        // If student not found, try as a teacher
+                        teacherDatabaseRef.orderByChild("username").equalTo(userId)
+                                .get()
+                                .addOnSuccessListener(teacherSnapshot -> {
+                                    if (teacherSnapshot.exists()) {
+                                        // Found the teacher, get their email
+                                        DataSnapshot teacherData = teacherSnapshot.getChildren().iterator().next();
+                                        String email = teacherData.child("email").getValue(String.class);
+                                        if (email != null) {
+                                            signInWithEmail(email, password, true); // true indicates teacher
+                                        } else {
+                                            showSnackbar("No email linked to this teacher username.");
+                                        }
+                                    } else {
+                                        showSnackbar("Invalid credentials.");
+                                    }
+                                })
+                                .addOnFailureListener(e -> showSnackbar("Error querying teachers: " + e.getMessage()));
+                    }
+                })
+                .addOnFailureListener(e -> showSnackbar("Error querying students: " + e.getMessage()));
+    }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-                            Toast.makeText(LoginActivity.this, "Database error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(LoginActivity.this, "Database error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void signInWithEmail(String email, String password, boolean isTeacher) {
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("LoginActivity", "Sign-in successful.");
+                        navigateToHomepage(isTeacher);
+                    } else {
+                        showSnackbar("Login failed. Check your credentials.");
+                    }
+                })
+                .addOnFailureListener(e -> showSnackbar("Authentication failed: " + e.getMessage()));
     }
 
     private void navigateToHomepage(boolean isTeacher) {
         Intent intent = new Intent(LoginActivity.this, HomepageActivity.class);
-        intent.putExtra("isTeacher", isTeacher); // Pass the user role as an extra
+        intent.putExtra("isTeacher", isTeacher); // Specify if the logged-in user is a teacher
         startActivity(intent);
-        finish(); // Close LoginActivity
+        finish(); // Close this activity so it cannot be returned to
     }
 
-    private void showRegistrationDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    private void navigateToAdminFragment() {
+        // Admin login successful, navigate to AdminFragment
+        Intent intent = new Intent(LoginActivity.this, HomepageActivity.class);
+        intent.putExtra("isAdmin", true); // Pass the admin flag
+        startActivity(intent);
+        finish();
+    }
 
-        // Inflate the dialog layout using ViewBinding
-        DialogRegistrationChoiceBinding dialogBinding = DialogRegistrationChoiceBinding.inflate(getLayoutInflater());
-        builder.setView(dialogBinding.getRoot());
+    private void showRegistrationChoiceDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_registration_choice, null);
+        builder.setView(view);
 
-        // Create the dialog
+        RadioGroup radioGroup = view.findViewById(R.id.radio_group);
+        Button btnCancel = view.findViewById(R.id.btnCancel);
+        Button btnConfirm = view.findViewById(R.id.btnConfirm);
+
         AlertDialog dialog = builder.create();
 
-        // Set button click listeners
-        dialogBinding.radioStudent.setOnClickListener(v -> {
-            startActivity(new Intent(LoginActivity.this, StudentRegistrationActivity.class));
-            dialog.dismiss(); // Close dialog after selection
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirm.setOnClickListener(v -> {
+            int selectedId = radioGroup.getCheckedRadioButtonId();
+            RadioButton selectedRadioButton = view.findViewById(selectedId);
+            if (selectedRadioButton != null) {
+                String registrationType = selectedRadioButton.getText().toString();
+                if ("Student".equals(registrationType)) {
+                    navigateToStudentRegistration();
+                } else if ("Teacher".equals(registrationType)) {
+                    navigateToTeacherRegistration();
+                }
+                dialog.dismiss();
+            } else {
+                Toast.makeText(LoginActivity.this, "Please select a registration type", Toast.LENGTH_SHORT).show();
+            }
         });
 
-        dialogBinding.radioTeacher.setOnClickListener(v -> {
-            startActivity(new Intent(LoginActivity.this, TeacherRegistrationActivity.class));
-            dialog.dismiss(); // Close dialog after selection
-        });
-
-        dialogBinding.buttonCancel.setOnClickListener(v -> dialog.dismiss()); // Close dialog on cancel
-
-        // Show the dialog
         dialog.show();
+    }
+
+    private void navigateToStudentRegistration() {
+        Intent intent = new Intent(LoginActivity.this, StudentRegistrationActivity.class);
+        startActivity(intent);
+    }
+
+    private void navigateToTeacherRegistration() {
+        Intent intent = new Intent(LoginActivity.this, TeacherRegistrationActivity.class);
+        startActivity(intent);
+    }
+
+    private void showSnackbar(String message) {
+        Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
     }
 }

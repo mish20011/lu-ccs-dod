@@ -1,47 +1,73 @@
 package com.catignascabela.dodapplication;
 
-import android.os.Bundle;
+import android.app.Dialog;
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
+
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-public class ViolationDialog extends DialogFragment {
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-    private Student student;
-    private OnViolationAddedListener listener;
+import java.util.List;
 
-    public interface OnViolationAddedListener {
-        void onViolationAdded(Student student, String violation, String punishment);
-    }
+public class ViolationDialog {
 
-    public ViolationDialog(Student student, OnViolationAddedListener listener) {
-        this.student = student;
-        this.listener = listener;
-    }
+    public static void showViolationDialog(@NonNull Context context, List<Violation> violations, ViolationSelectionListener listener) {
+        // Inflate the custom layout
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View dialogView = inflater.inflate(R.layout.dialog_violation, null);
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.dialog_violation, container, false);
+        // Get references to the RecyclerView, title TextView, and custom punishment input
+        RecyclerView violationRecyclerView = dialogView.findViewById(R.id.violation_recycler_view);
+        TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
+        dialogTitle.setText("Select Violation");
 
-        EditText violationInput = view.findViewById(R.id.violation_input);
-        EditText punishmentInput = view.findViewById(R.id.punishment_input);
-        Button addButton = view.findViewById(R.id.add_violation_button);
+        EditText customPunishmentInput = dialogView.findViewById(R.id.custom_punishment_input);
+        customPunishmentInput.setVisibility(View.GONE); // Initially hidden
 
-        addButton.setOnClickListener(v -> {
-            String violation = violationInput.getText().toString();
-            String punishment = punishmentInput.getText().toString();
+        // Initialize RecyclerView with ViolationAdapter
+        ViolationAdapter adapter = new ViolationAdapter(violations, violation -> {
+            // Show the custom punishment input field when a violation is selected
+            customPunishmentInput.setVisibility(View.VISIBLE);
+            customPunishmentInput.requestFocus(); // Focus on input field
 
-            listener.onViolationAdded(student, violation, punishment);
-            dismiss(); // Close the dialog
+            // Set up the confirm button action when a violation is selected
+            Button confirmButton = dialogView.findViewById(R.id.confirm_button);
+            confirmButton.setOnClickListener(v -> {
+                String customPunishment = customPunishmentInput.getText().toString().trim();
+                long timestamp = System.currentTimeMillis(); // Add timestamp to the violation
+                listener.onViolationSelected(violation.getDescription(), timestamp, customPunishment);
+                Dialog alertDialog = null;
+                alertDialog.dismiss(); // Dismiss the dialog when the confirm button is clicked
+            });
         });
 
-        return view;
+        // Set the RecyclerView's layout manager and adapter
+        violationRecyclerView.setLayoutManager(new LinearLayoutManager(context));
+        violationRecyclerView.setAdapter(adapter);
+
+        // Create the dialog
+        AlertDialog alertDialog = new MaterialAlertDialogBuilder(context)
+                .setView(dialogView)
+                .setNegativeButton("Cancel", null)
+                .create();
+
+        // Show the dialog
+        alertDialog.show();
+
+        // Set up close button action
+        Button closeButton = dialogView.findViewById(R.id.close_button);
+        closeButton.setOnClickListener(v -> alertDialog.dismiss()); // Dismiss on close button click
+    }
+
+    public interface ViolationSelectionListener {
+        void onViolationSelected(String violation, long timestamp, String customPunishment); // Include custom punishment
     }
 }

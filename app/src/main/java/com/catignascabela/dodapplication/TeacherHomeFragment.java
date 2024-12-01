@@ -1,26 +1,35 @@
 package com.catignascabela.dodapplication;
 
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+
 import com.catignascabela.dodapplication.databinding.FragmentHomeTeacherBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.database.DataSnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TeacherHomeFragment extends Fragment {
-
     private FragmentHomeTeacherBinding binding;
-    private DatabaseReference databaseReference; // Firebase Database reference
+    private List<Student> studentList;
+    private StudentAdapter studentAdapter;
+    private DatabaseReference studentsRef; // Reference for students
 
     @Nullable
     @Override
@@ -29,62 +38,109 @@ public class TeacherHomeFragment extends Fragment {
         binding = FragmentHomeTeacherBinding.inflate(inflater, container, false);
         View view = binding.getRoot();
 
-        // Initialize Firebase Auth
+        // Initialize Firebase Auth and get the current user
         FirebaseAuth auth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = auth.getCurrentUser(); // Get the current logged-in user
+        FirebaseUser currentUser = auth.getCurrentUser();
 
-        // Check if the user is logged in
+        // Initialize Realtime Database reference for students
+        studentsRef = FirebaseDatabase.getInstance().getReference("students");
+
+        // Set up the RecyclerView for displaying students
+        binding.studentRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        studentList = new ArrayList<>();
+        studentAdapter = new StudentAdapter(studentList, student -> openManageViolationsFragment(student));
+        binding.studentRecyclerView.setAdapter(studentAdapter);
+
+        // Load all students initially
+        loadStudentsByDepartment("All");
+
+        // Set up department filter spinner
+        String[] departmentOptions = {"All", "BS-Computer Science", "BS-Information Technology"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_spinner_dropdown_item, departmentOptions);
+        binding.departmentSpinner.setAdapter(adapter);
+
+        // Set listener to reload list based on department selection
+        binding.departmentSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedDepartment = departmentOptions[position];
+                loadStudentsByDepartment(selectedDepartment);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                loadStudentsByDepartment("All");
+            }
+        });
+
+        // Load teacher's name if the user is logged in
         if (currentUser != null) {
-            String teacherId = currentUser.getUid(); // Get the unique ID of the logged-in user
-            // Initialize Firebase Database reference
-            databaseReference = FirebaseDatabase.getInstance().getReference("teachers");
+            String teacherId = currentUser.getUid();
             loadTeacherName(teacherId);
         } else {
-            binding.teacherName.setText("Teacher's Name"); // Default name if not found
-            Toast.makeText(getActivity(), "User not logged in.", Toast.LENGTH_SHORT).show();
+            binding.teacherName.setText("Teacher's Name");
+            Toast.makeText(requireActivity(), "User not logged in.", Toast.LENGTH_SHORT).show();
         }
-
-        // Set up button to view students' profiles
-        binding.viewStudentsButton.setOnClickListener(v -> {
-            getParentFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new StudentProfilesFragment())
-                    .addToBackStack(null) // Allow back navigation
-                    .commit();
-        });
-
-        // Set up button to manage violations (if needed)
-        binding.manageViolationsButton.setOnClickListener(v -> {
-            // Navigate to the violations management fragment
-            getParentFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new ManageViolationsFragment()) // Assuming you create this fragment
-                    .addToBackStack(null)
-                    .commit();
-        });
 
         return view;
     }
 
-    private void loadTeacherName(String teacherId) {
-        databaseReference.child(teacherId).addListenerForSingleValueEvent(new ValueEventListener() {
+    private void loadStudentsByDepartment(String department) {
+        studentsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    String teacherName = dataSnapshot.child("fullName").getValue(String.class);
-                    if (teacherName != null) {
-                        binding.teacherName.setText(teacherName);
-                    } else {
-                        binding.teacherName.setText("Teacher's Name");
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                studentList.clear();
+                for (DataSnapshot studentSnapshot : snapshot.getChildren()) {
+                    Student student = studentSnapshot.getValue(Student.class);
+                    if (student != null && (department.equals("All") || student.getCourse().equals(department))) {
+                        studentList.add(student);
                     }
+                }
+                studentAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(requireContext(), "Failed to load students: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadTeacherName(String teacherId) {
+        // Load teacher's name from the database (if needed)
+        // Assuming you have a teachers node in your database
+        DatabaseReference teacherRef = FirebaseDatabase.getInstance().getReference("teachers").child(teacherId);
+
+        teacherRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot taskSnapshot) {
+                if (taskSnapshot.exists()) {
+                    String teacherName = taskSnapshot.child("fullName").getValue(String.class);
+                    binding.teacherName.setText(teacherName != null ? teacherName : "Teacher's Name");
                 } else {
                     binding.teacherName.setText("Teacher not found");
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Toast.makeText(getActivity(), "Failed to load teacher's name.", Toast.LENGTH_SHORT).show();
+            public void onCancelled(@NonNull DatabaseError error) {
+                binding.teacherName.setText("Error loading teacher name");
             }
         });
+    }
+
+    private void openManageViolationsFragment(Student student) {
+        ManageViolationsFragment manageViolationsFragment = new ManageViolationsFragment();
+        Bundle args = new Bundle();
+        args.putString("studentId", student.getStudentId());
+        args.putString("fullName", student.getFullName());
+        manageViolationsFragment.setArguments(args);
+
+        getParentFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, manageViolationsFragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override

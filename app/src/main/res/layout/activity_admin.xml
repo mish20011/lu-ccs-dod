@@ -1,0 +1,24 @@
+<!-- activity_admin.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Title Text -->
+    <TextView
+        android:id="@+id/adminTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pending Teacher Registrations"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp"
+        android:textStyle="bold" />
+
+    <!-- RecyclerView for displaying pending teacher registrations -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/pendingTeachersRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>
