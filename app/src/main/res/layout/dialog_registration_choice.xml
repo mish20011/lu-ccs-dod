@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/dialogRegistrationChoice"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/dialogForgot"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="20dp"
-    android:padding="0dp">
+    android:layout_height="match_parent"
+    android:background="@drawable/logooobuffalo">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/dialogBox"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/white_box"
+        android:layout_height="236dp"
+        android:layout_margin="20dp"
+        android:background="@drawable/rounded_corners"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.482"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:layout_editor_absoluteX="-16dp">
+        app:layout_constraintVertical_bias="0.498">
 
         <TextView
             android:id="@+id/dialog_title"
@@ -67,17 +71,15 @@
                 android:textColor="@color/black" />
         </RadioGroup>
 
-        <!-- Confirm button added next to the Cancel button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:orientation="horizontal"
-            app:layout_constraintTop_toBottomOf="@id/radio_group"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="20dp">
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/radio_group">
 
-            <!-- Cancel Button -->
             <Button
                 android:id="@+id/btnCancel"
                 android:layout_width="wrap_content"
@@ -89,7 +91,6 @@
                 android:textSize="14sp"
                 app:cornerRadius="20dp" />
 
-            <!-- Confirm Button -->
             <Button
                 android:id="@+id/btnConfirm"
                 android:layout_width="wrap_content"
@@ -104,3 +105,4 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

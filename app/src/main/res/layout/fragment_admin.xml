@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@drawable/logooobuffalo">
 
     <!-- Title Text -->
     <TextView
@@ -20,5 +21,7 @@
         android:id="@+id/pendingTeachersRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:background="@color/white"/>
+
 </LinearLayout>
